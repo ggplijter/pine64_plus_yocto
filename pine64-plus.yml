@@ -1,0 +1,63 @@
+# kas configuration: first Yocto build for the Pine64+ (Allwinner A64)
+# Build with:  kas-container build pine64-plus.yml
+# Shell with:  kas-container shell pine64-plus.yml
+
+header:
+  version: 14
+
+machine: pine64-plus
+distro: poky
+target: core-image-base
+
+repos:
+  poky:
+    url: https://git.yoctoproject.org/poky
+    branch: scarthgap
+    layers:
+      meta:
+      meta-poky:
+
+  meta-openembedded:
+    url: https://git.openembedded.org/meta-openembedded
+    branch: scarthgap
+    layers:
+      meta-oe:
+      meta-python:
+      meta-networking:
+
+  meta-arm:
+    url: https://git.yoctoproject.org/meta-arm
+    branch: scarthgap
+    layers:
+      meta-arm:
+      meta-arm-toolchain:
+
+  meta-sunxi:
+    url: https://github.com/linux-sunxi/meta-sunxi
+    branch: scarthgap
+
+  meta-pine64:
+    path: meta-pine64
+
+local_conf_header:
+  learning: |
+    # Passwordless root login and an SSH server: fine for learning, never for production
+    EXTRA_IMAGE_FEATURES += "debug-tweaks ssh-server-dropbear"
+    # Delete per-recipe work directories after building to save disk space
+    INHERIT += "rm_work"
+  lvgl: |
+    # LVGL library (meta-oe) plus the official demo application
+    IMAGE_INSTALL:append = " lvgl lvgl-demo-fb kernel-modules libdrm-tests"
+    # Use the DRM/KMS display backend (/dev/dri/card0) instead of fbdev
+    PACKAGECONFIG:pn-lvgl = "drm"
+    PACKAGECONFIG:pn-lvgl-demo-fb = "drm"
+#    DEPENDS:append:pn-lvgl-demo-fb = " libdrm"
+
+  network: |
+    # systemd as init system (one-time large rebuild)
+    INIT_MANAGER = "systemd"
+    # NetworkManager (meta-networking) plus its command-line tool
+    IMAGE_INSTALL:append = " networkmanager networkmanager-nmcli"
+  graphics: |
+    # meta-sunxi: open source mainline graphics (kernel drm.cfg, lima/panfrost in Mesa)
+    MACHINEOVERRIDES .= ":use-mailine-graphics"

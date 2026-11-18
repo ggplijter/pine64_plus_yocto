@@ -1,0 +1,13 @@
+# Generated build output
+build/
+# Layers cloned by kas (pinned in pine64-plus.lock.yml)
+poky/
+meta-openembedded/
+meta-arm/
+meta-sunxi/
+# Python environment (recreate with: uv sync)
+.venv/
+# Personal files
+.kas_shell_history
+*.bak
+*.lock

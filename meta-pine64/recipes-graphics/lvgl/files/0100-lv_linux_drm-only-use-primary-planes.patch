@@ -1,0 +1,42 @@
+lv_linux_drm: only use primary planes
+
+find_plane() took the first plane matching the CRTC and pixel format.
+On Allwinner A64 this selects the HDMI overlay plane, which hangs the
+kernel when used for a full-screen buffer. Only accept planes of type
+DRM_PLANE_TYPE_PRIMARY.
+
+Upstream-Status: Pending
+
+--- a/src/drivers/display/drm/lv_linux_drm.c
++++ b/src/drivers/display/drm/lv_linux_drm.c
+@@ -430,6 +430,30 @@
+             continue;
+         }
+ 
++        /* Only use primary planes: on Allwinner A64 the HDMI overlay
++         * plane hangs the kernel when used for a full-screen buffer */
++        {
++            drmModeObjectPropertiesPtr props = drmModeObjectGetProperties(drm_dev->fd, plane->plane_id,
++                                                                          DRM_MODE_OBJECT_PLANE);
++            uint64_t type = DRM_PLANE_TYPE_OVERLAY;
++            uint32_t k;
++
++            if(props) {
++                for(k = 0; k < props->count_props; ++k) {
++                    drmModePropertyPtr prop = drmModeGetProperty(drm_dev->fd, props->props[k]);
++                    if(prop && strcmp(prop->name, "type") == 0)
++                        type = props->prop_values[k];
++                    drmModeFreeProperty(prop);
++                }
++                drmModeFreeObjectProperties(props);
++            }
++
++            if(type != DRM_PLANE_TYPE_PRIMARY) {
++                drmModeFreePlane(plane);
++                continue;
++            }
++        }
++
+         *plane_id = plane->plane_id;
+         drmModeFreePlane(plane);
+ 
